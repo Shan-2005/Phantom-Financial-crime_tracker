@@ -41,6 +41,9 @@ blockchain/artifacts/
 blockchain/cache/
 blockchain/typechain-types/
 
+# Supabase
+supabase/.temp/
+
 # OS
 .DS_Store
 Thumbs.db
