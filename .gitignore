@@ -43,6 +43,7 @@ blockchain/typechain-types/
 
 # Supabase
 supabase/.temp/
+supabase/seed_data.sql
 
 # OS
 .DS_Store
