@@ -1,19 +1,26 @@
-"""PHANTOM Database Seeder (Dual-Mode: Cloud PostgreSQL/Supabase & Local SQLite/PG).
+"""PHANTOM Database Seeder (Multi-Engine: Supabase Cloud PG, REST, SQL Export & SQLite).
 
-Bulk-loads processed CSVs from data/processed/ into PostgreSQL (using psycopg2
-batched inserts / ON CONFLICT DO NOTHING) or local SQLite (when PHANTOM_MODE=local
-and no Postgres server is available), verifying foreign-key integrity and printing
-exact row counts.
+Bulk-loads processed CSVs from data/processed/ into:
+1. Supabase PostgreSQL via direct DATABASE_URL (if provided)
+2. Supabase Cloud REST API via SUPABASE_SERVICE_ROLE_KEY (if provided)
+3. Generates supabase/seed_data.sql for execution directly in Supabase SQL Editor
+4. Local SQLite database (at data/phantom_local.db) for standalone zero-dependency execution.
 
 Usage:
     python scripts/seed_supabase.py
+    python scripts/seed_supabase.py --export-sql
+    python scripts/seed_supabase.py --rest
 """
 
 from __future__ import annotations
 
+import argparse
+import json
 import os
 import sqlite3
 import sys
+import urllib.request
+import urllib.error
 from pathlib import Path
 from typing import Any
 
@@ -101,43 +108,20 @@ CREATE TABLE IF NOT EXISTS account_relationships (
     source_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     target_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     relationship_type TEXT NOT NULL,
-    confidence REAL DEFAULT 0.85,
+    confidence REAL DEFAULT 1.00,
     evidence_count INTEGER DEFAULT 1,
-    metadata TEXT DEFAULT '{}',
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (source_account_id, target_account_id, relationship_type)
-);
-
-CREATE TABLE IF NOT EXISTS risk_scores (
-    id TEXT PRIMARY KEY,
-    entity_type TEXT NOT NULL,
-    entity_id TEXT NOT NULL,
-    score REAL NOT NULL,
-    risk_level TEXT NOT NULL,
-    reasons TEXT DEFAULT '[]',
-    calculated_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS risk_factors (
-    id TEXT PRIMARY KEY,
-    risk_score_id TEXT NOT NULL REFERENCES risk_scores(id) ON DELETE CASCADE,
-    rule_id TEXT NOT NULL,
-    rule_name TEXT NOT NULL,
-    severity TEXT NOT NULL,
-    weight REAL NOT NULL,
-    evidence TEXT DEFAULT '{}',
+    metadata TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS fraud_rules (
-    id TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     rule_id TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
-    description TEXT NOT NULL,
-    default_weight REAL NOT NULL,
-    severity TEXT NOT NULL,
-    is_active INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    description TEXT,
+    default_weight REAL DEFAULT 10.00,
+    severity TEXT NOT NULL DEFAULT 'MEDIUM',
+    is_active INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS alerts (
@@ -147,94 +131,32 @@ CREATE TABLE IF NOT EXISTS alerts (
     alert_type TEXT NOT NULL,
     severity TEXT NOT NULL,
     title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    evidence TEXT DEFAULT '{}',
+    description TEXT,
+    evidence TEXT,
     status TEXT DEFAULT 'NEW',
-    assigned_to TEXT REFERENCES profiles(id) ON DELETE SET NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS investigations (
     id TEXT PRIMARY KEY,
-    investigator_id TEXT REFERENCES profiles(id) ON DELETE SET NULL,
     case_number TEXT UNIQUE NOT NULL,
     title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    priority TEXT DEFAULT 'MEDIUM',
-    status TEXT DEFAULT 'OPEN',
+    description TEXT,
+    priority TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'OPEN',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS investigation_entities (
-    id TEXT PRIMARY KEY,
-    investigation_id TEXT NOT NULL REFERENCES investigations(id) ON DELETE CASCADE,
-    entity_type TEXT NOT NULL,
-    entity_id TEXT NOT NULL,
-    notes TEXT,
-    added_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (investigation_id, entity_type, entity_id)
-);
-
-CREATE TABLE IF NOT EXISTS investigation_notes (
-    id TEXT PRIMARY KEY,
-    investigation_id TEXT NOT NULL REFERENCES investigations(id) ON DELETE CASCADE,
-    author_id TEXT REFERENCES profiles(id) ON DELETE SET NULL,
-    content TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS blockchain_records (
-    id TEXT PRIMARY KEY,
-    record_hash TEXT UNIQUE NOT NULL,
-    record_type TEXT NOT NULL,
-    canonical_payload TEXT NOT NULL,
-    blockchain_tx_id TEXT NOT NULL,
-    block_number INTEGER DEFAULT 0,
-    submitter_address TEXT,
-    status TEXT DEFAULT 'VERIFIED',
-    verified_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    assigned_to TEXT
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES profiles(id) ON DELETE SET NULL,
     action TEXT NOT NULL,
     entity_type TEXT NOT NULL,
     entity_id TEXT NOT NULL,
-    previous_hash TEXT,
-    current_hash TEXT,
-    blockchain_tx_id TEXT,
-    details TEXT DEFAULT '{}',
-    timestamp TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS network_clusters (
-    id TEXT PRIMARY KEY,
-    cluster_name TEXT NOT NULL,
-    entity_ids TEXT DEFAULT '[]',
-    risk_score REAL DEFAULT 50.00,
-    description TEXT NOT NULL,
-    detected_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS ingestion_jobs (
-    id TEXT PRIMARY KEY,
-    filename TEXT NOT NULL,
-    total_records INTEGER DEFAULT 0,
-    processed_records INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'PENDING',
-    error_log TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS system_events (
-    id TEXT PRIMARY KEY,
-    event_type TEXT NOT NULL,
-    severity TEXT DEFAULT 'INFO',
-    payload TEXT DEFAULT '{}',
+    actor TEXT NOT NULL,
+    prev_hash TEXT,
+    curr_hash TEXT NOT NULL,
+    status TEXT DEFAULT 'CHAIN_VALID',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 """
@@ -245,8 +167,9 @@ TABLE_COLUMNS: dict[str, list[str]] = {
         "country", "identity_hash", "risk_score", "risk_level",
     ],
     "accounts": [
-        "id", "account_number_masked", "customer_id", "account_type", "bank_code",
-        "country", "status", "risk_score", "risk_level", "is_dormant", "last_activity_at",
+        "id", "account_number_masked", "customer_id", "account_type",
+        "bank_code", "country", "status", "risk_score", "risk_level",
+        "is_dormant", "last_activity_at",
     ],
     "transactions": [
         "id", "transaction_reference", "sender_account_id", "receiver_account_id",
@@ -263,6 +186,164 @@ TABLE_COLUMNS: dict[str, list[str]] = {
         "confidence", "evidence_count", "metadata",
     ],
 }
+
+
+def export_seed_sql(processed_dir: Path, output_path: Path) -> Path:
+    """Generate batched SQL INSERT statements ready to execute in Supabase SQL Editor."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    out_lines = [
+        "-- ============================================================================\n",
+        "-- PHANTOM — Complete Dataset Seed (Generated from data/processed/)\n",
+        "-- Safe to run in Supabase SQL Editor (uses ON CONFLICT DO NOTHING)\n",
+        "-- ============================================================================\n\n",
+        "BEGIN;\n\n",
+    ]
+
+    load_order = [
+        ("customers", "customers.csv"),
+        ("accounts", "accounts.csv"),
+        ("transactions", "transactions.csv"),
+        ("identity_attributes", "identity_attributes.csv"),
+        ("account_relationships", "account_relationships.csv"),
+    ]
+
+    total_rows = 0
+    for table, csv_name in load_order:
+        p = processed_dir / csv_name
+        if not p.exists():
+            continue
+        df = pd.read_csv(p, keep_default_na=False)
+        cols = TABLE_COLUMNS[table]
+        df = df[cols].copy()
+        row_count = len(df)
+        total_rows += row_count
+        print(f"[export:sql] Formatting {table} ({row_count:,} rows)...")
+
+        out_lines.append(f"-- ----------------------------------------------------------------------------\n")
+        out_lines.append(f"-- {table.upper()} ({row_count:,} rows)\n")
+        out_lines.append(f"-- ----------------------------------------------------------------------------\n")
+
+        batch_size = 400
+        for i in range(0, row_count, batch_size):
+            batch = df.iloc[i : i + batch_size]
+            vals = []
+            for row in batch.itertuples(index=False):
+                escaped = []
+                for v in row:
+                    if v is None or v == "":
+                        escaped.append("NULL")
+                    elif isinstance(v, (int, float)):
+                        escaped.append(str(v))
+                    elif isinstance(v, bool):
+                        escaped.append("TRUE" if v else "FALSE")
+                    else:
+                        s = str(v).replace("'", "''")
+                        escaped.append(f"'{s}'")
+                vals.append(f"({', '.join(escaped)})")
+
+            cols_str = ", ".join(cols)
+            vals_str = ",\n".join(vals)
+            stmt = f"INSERT INTO {table} ({cols_str}) VALUES\n{vals_str}\nON CONFLICT DO NOTHING;\n\n"
+            out_lines.append(stmt)
+
+    out_lines.append("COMMIT;\n")
+    full_sql = "".join(out_lines)
+    output_path.write_text(full_sql, encoding="utf-8")
+    print(f"[export:sql] SUCCESS -> {output_path} ({len(full_sql):,} bytes, {total_rows:,} total records)")
+    return output_path
+
+
+def seed_rest(processed_dir: Path, supabase_url: str, api_key: str) -> dict[str, int]:
+    """Load processed CSVs into Supabase using PostgREST endpoints."""
+    base_url = supabase_url.rstrip("/") + "/rest/v1"
+    headers = {
+        "apikey": api_key,
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=ignore-duplicates,return=minimal",
+    }
+
+    counts: dict[str, int] = {}
+    load_order = [
+        ("customers", "customers.csv"),
+        ("accounts", "accounts.csv"),
+        ("transactions", "transactions.csv"),
+        ("identity_attributes", "identity_attributes.csv"),
+        ("account_relationships", "account_relationships.csv"),
+    ]
+
+    for table, csv_name in load_order:
+        p = processed_dir / csv_name
+        if not p.exists():
+            continue
+        df = pd.read_csv(p, keep_default_na=False)
+        cols = TABLE_COLUMNS[table]
+        df = df[cols].copy()
+
+        endpoint = f"{base_url}/{table}"
+        records = df.to_dict(orient="records")
+        batch_size = 500
+        loaded = 0
+
+        for i in range(0, len(records), batch_size):
+            batch = records[i : i + batch_size]
+            payload = json.dumps(batch).encode("utf-8")
+            req = urllib.request.Request(endpoint, data=payload, headers=headers, method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    if resp.status in (200, 201):
+                        loaded += len(batch)
+            except urllib.error.HTTPError as e:
+                err_body = e.read().decode("utf-8", errors="ignore")
+                if "violates row-level security policy" in err_body:
+                    raise PermissionError(
+                        "Supabase Row-Level Security (RLS) blocked insertion. "
+                        "To seed via REST, supply SUPABASE_SERVICE_ROLE_KEY (secret key) in .env, "
+                        "or run supabase/seed_data.sql directly in the Supabase SQL Editor."
+                    )
+                raise RuntimeError(f"HTTP {e.code} on {table}: {err_body}")
+
+        counts[table] = loaded
+        print(f"[seed:rest] {table}: {loaded:,} records inserted")
+
+    return counts
+
+
+def seed_postgres(processed_dir: Path, database_url: str) -> dict[str, int]:
+    """Load processed CSVs into PostgreSQL (Supabase / local PG) using batched inserts."""
+    import psycopg2
+    from psycopg2.extras import execute_values
+
+    conn = psycopg2.connect(database_url, connect_timeout=10)
+    counts: dict[str, int] = {}
+    load_order = [
+        ("customers", "customers.csv"),
+        ("accounts", "accounts.csv"),
+        ("transactions", "transactions.csv"),
+        ("identity_attributes", "identity_attributes.csv"),
+        ("account_relationships", "account_relationships.csv"),
+    ]
+
+    with conn.cursor() as cur:
+        for table, csv_name in load_order:
+            csv_path = processed_dir / csv_name
+            if not csv_path.exists():
+                continue
+            df = pd.read_csv(csv_path, keep_default_na=False)
+            cols = TABLE_COLUMNS[table]
+            df = df[cols].copy()
+            col_list = ", ".join(cols)
+            sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"
+            rows = [tuple(r) for r in df.itertuples(index=False, name=None)]
+            for i in range(0, len(rows), 1000):
+                execute_values(cur, sql, rows[i : i + 1000], page_size=1000)
+            conn.commit()
+            cur.execute(f"SELECT COUNT(*) FROM {table}")
+            cnt = int(cur.fetchone()[0])
+            counts[table] = cnt
+            print(f"[seed:postgres] {table}: {cnt:,} rows loaded")
+    conn.close()
+    return counts
 
 
 def seed_sqlite(processed_dir: Path, db_path: Path) -> dict[str, int]:
@@ -316,67 +397,57 @@ def seed_sqlite(processed_dir: Path, db_path: Path) -> dict[str, int]:
     return counts
 
 
-def seed_postgres(processed_dir: Path, database_url: str) -> dict[str, int]:
-    """Load processed CSVs into PostgreSQL (Supabase / local PG) using batched inserts."""
-    import psycopg2
-    from psycopg2.extras import execute_values
-
-    conn = psycopg2.connect(database_url)
-    counts: dict[str, int] = {}
-    load_order = [
-        ("customers", "customers.csv"),
-        ("accounts", "accounts.csv"),
-        ("transactions", "transactions.csv"),
-        ("identity_attributes", "identity_attributes.csv"),
-        ("account_relationships", "account_relationships.csv"),
-    ]
-
-    with conn.cursor() as cur:
-        for table, csv_name in load_order:
-            csv_path = processed_dir / csv_name
-            if not csv_path.exists():
-                continue
-            df = pd.read_csv(csv_path, keep_default_na=False)
-            cols = TABLE_COLUMNS[table]
-            df = df[cols].copy()
-            col_list = ", ".join(cols)
-            sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"
-            rows = [tuple(r) for r in df.itertuples(index=False, name=None)]
-            for i in range(0, len(rows), 1000):
-                execute_values(cur, sql, rows[i : i + 1000], page_size=1000)
-            conn.commit()
-            cur.execute(f"SELECT COUNT(*) FROM {table}")
-            cnt = int(cur.fetchone()[0])
-            counts[table] = cnt
-            print(f"[seed:postgres] {table}: {cnt:,} rows loaded")
-    conn.close()
-    return counts
-
-
 def main() -> None:
+    parser = argparse.ArgumentParser(description="PHANTOM Database Seeder")
+    parser.add_argument("--export-sql", action="store_true", help="Export complete SQL seed file for Supabase Editor")
+    parser.add_argument("--rest", action="store_true", help="Force REST API seeding")
+    args = parser.parse_args()
+
     mode = os.getenv("PHANTOM_MODE", "local").lower()
     database_url = os.getenv("DATABASE_URL", "")
+    supabase_url = os.getenv("SUPABASE_URL", "")
+    service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    anon_key = os.getenv("SUPABASE_ANON_KEY", "")
     processed_dir = ROOT_DIR / "data" / "processed"
 
-    if mode == "cloud" and database_url and "localhost" not in database_url:
-        seed_postgres(processed_dir, database_url)
+    # Always generate/refresh the standalone seed_data.sql file
+    seed_sql_path = ROOT_DIR / "supabase" / "seed_data.sql"
+    export_seed_sql(processed_dir, seed_sql_path)
+
+    if args.export_sql:
+        print(f"[seed] SQL seed file generated at: {seed_sql_path}")
         return
 
-    # Local mode: try local PG if explicitly reachable, otherwise SQLite
-    if database_url and database_url.startswith("postgresql://"):
-        try:
-            import psycopg2
+    # Direct PostgreSQL connection
+    has_valid_db_url = (
+        database_url
+        and database_url.startswith("postgresql://")
+        and "[YOUR-PASSWORD]" not in database_url
+    )
 
-            conn = psycopg2.connect(database_url, connect_timeout=2)
-            conn.close()
+    if has_valid_db_url:
+        print(f"[seed] Connecting to PostgreSQL at {database_url.split('@')[-1]}...")
+        try:
             seed_postgres(processed_dir, database_url)
             return
-        except Exception:
-            print("[seed] Local PostgreSQL unreachable; using SQLite fallback at data/phantom_local.db")
+        except Exception as e:
+            print(f"[seed] PostgreSQL direct connection failed: {e}")
 
+    # Supabase REST API (if service role key provided or --rest flag)
+    has_service_key = service_key and not service_key.startswith("sb_publishable") and service_key != "your-service-role-key"
+    if args.rest or (mode == "cloud" and has_service_key and supabase_url):
+        key_to_use = service_key if has_service_key else anon_key
+        print(f"[seed] Attempting Supabase REST seeding to {supabase_url}...")
+        try:
+            seed_rest(processed_dir, supabase_url, key_to_use)
+            return
+        except Exception as e:
+            print(f"[seed:rest] Note: {e}")
+
+    # Fallback to local SQLite
+    print("[seed] Seeding local SQLite database at data/phantom_local.db...")
     seed_sqlite(processed_dir, ROOT_DIR / "data" / "phantom_local.db")
 
 
 if __name__ == "__main__":
     main()
-
