@@ -13,56 +13,65 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+    <div className="min-h-screen bg-[#F4F7FB] dark:bg-[#0B132B] text-gray-900 dark:text-gray-100 flex items-center justify-center p-6 font-sans transition-colors">
+      <div className="w-full max-w-md bg-white dark:bg-[#1C2434] border border-gray-200/80 dark:border-gray-800/80 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:shadow-none">
+        {/* Brand Area */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-4">
-            <Shield className="w-6 h-6 text-cyan-400" />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#5750F1] to-[#8E82F6] flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 mb-4">
+            <Shield className="w-7 h-7 text-white" />
           </div>
-          <h2 className="text-xl font-bold font-mono tracking-wider">PHANTOM AUTH</h2>
-          <p className="text-xs text-slate-400 mt-1">FIU Taskforce & Compliance Login</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+            Phantom
+          </h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
+            FIU Taskforce & Compliance Login
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div>
-            <label className="block text-xs font-mono text-slate-400 mb-1.5">Official Email</label>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              Official Email Address
+            </label>
             <div className="relative flex items-center">
-              <Mail className="absolute left-3 w-4 h-4 text-slate-500" />
+              <Mail className="absolute left-3.5 w-4 h-4 text-gray-400" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#F4F7FB] dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#5750F1] focus:ring-1 focus:ring-[#5750F1]"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-mono text-slate-400 mb-1.5">Security Token / Password</label>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              Security Token / Password
+            </label>
             <div className="relative flex items-center">
-              <Lock className="absolute left-3 w-4 h-4 text-slate-500" />
+              <Lock className="absolute left-3.5 w-4 h-4 text-gray-400" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#F4F7FB] dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-[#5750F1] focus:ring-1 focus:ring-[#5750F1]"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all"
+            className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#5750F1] hover:bg-[#463fc5] text-white font-semibold text-xs transition-all shadow-md shadow-indigo-500/20"
           >
             Authenticate Session <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        <div className="mt-6 text-center text-xs text-slate-500">
+        <div className="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
           Need an investigator account?{' '}
-          <Link to="/signup" className="text-cyan-400 hover:underline">
+          <Link to="/signup" className="text-[#5750F1] dark:text-indigo-400 font-semibold hover:underline">
             Register Officer ID
           </Link>
         </div>
@@ -70,4 +79,3 @@ export const Login: React.FC = () => {
     </div>
   );
 };
-

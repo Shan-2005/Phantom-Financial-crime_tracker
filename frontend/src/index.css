@@ -4,23 +4,37 @@
 
 @layer base {
   body {
-    @apply bg-phantom-bg text-slate-100 font-sans antialiased min-h-screen selection:bg-phantom-accent selection:text-slate-900;
+    @apply bg-[#F4F7FB] text-[#1C2434] font-sans antialiased min-h-screen dark:bg-[#0F172A] dark:text-[#E2E8F0];
+  }
+
+  ::selection {
+    background-color: #5750f1;
+    color: #ffffff;
   }
 }
 
-/* Custom scrollbars for intelligence dashboards */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #94a3b8;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

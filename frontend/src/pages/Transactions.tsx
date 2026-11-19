@@ -82,70 +82,78 @@ export const Transactions: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Real-Time Pre-Transaction Screening Panel */}
-      <div className="bg-phantom-surface border border-cyan-500/30 rounded-xl p-6 shadow-xl relative overflow-hidden">
-        <div className="flex items-center justify-between pb-4 border-b border-phantom-border">
+      <div className="bg-white dark:bg-[#1C2434] border border-gray-200/80 dark:border-gray-800 rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] relative overflow-hidden">
+        <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-base font-bold text-slate-100 font-mono tracking-tight">
+            <Zap className="w-5 h-5 text-[#5750F1]" />
+            <h2 className="text-base font-bold text-gray-900 dark:text-white tracking-tight">
               Pre-Transaction Real-Time AML Screener
             </h2>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#5750F1]/10 text-[#5750F1]">
               TARGET &lt; 500ms
             </span>
           </div>
           <button
             onClick={() => setIsScreeningOpen(!isScreeningOpen)}
-            className="text-xs font-mono text-cyan-400 hover:underline"
+            className="text-xs font-semibold text-[#5750F1] hover:underline"
           >
             {isScreeningOpen ? 'Collapse Panel' : 'Expand Panel'}
           </button>
         </div>
 
         {isScreeningOpen && (
-          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Form */}
-            <form onSubmit={handleScreenSubmit} className="space-y-3">
+            <form onSubmit={handleScreenSubmit} className="space-y-3.5">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Sender Account</label>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                    Sender Account
+                  </label>
                   <input
                     type="text"
                     value={senderInput}
                     onChange={(e) => setSenderInput(e.target.value)}
                     required
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-mono"
+                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2 text-xs text-gray-900 dark:text-gray-100 font-mono focus:border-[#5750F1] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Receiver Account</label>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                    Receiver Account
+                  </label>
                   <input
                     type="text"
                     value={receiverInput}
                     onChange={(e) => setReceiverInput(e.target.value)}
                     required
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-mono"
+                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2 text-xs text-gray-900 dark:text-gray-100 font-mono focus:border-[#5750F1] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Amount (INR)</label>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                    Amount (INR)
+                  </label>
                   <input
                     type="number"
                     value={amountInput}
                     onChange={(e) => setAmountInput(e.target.value)}
                     required
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-mono"
+                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2 text-xs text-gray-900 dark:text-gray-100 font-mono focus:border-[#5750F1] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Device Fingerprint</label>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                    Device Fingerprint
+                  </label>
                   <input
                     type="text"
                     value={deviceInput}
                     onChange={(e) => setDeviceInput(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-mono"
+                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2 text-xs text-gray-900 dark:text-gray-100 font-mono focus:border-[#5750F1] focus:outline-none"
                   />
                 </div>
               </div>
@@ -154,7 +162,7 @@ export const Transactions: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isScreeningLoading}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#5750F1] hover:bg-[#4634FF] text-white font-bold text-xs transition-all shadow-md shadow-indigo-500/20"
                 >
                   <Play className="w-3.5 h-3.5" />
                   {isScreeningLoading ? 'Simulating Graph Path...' : 'Screen Payment in Real-Time'}
@@ -167,7 +175,7 @@ export const Transactions: React.FC = () => {
                     setAmountInput('15000');
                     setDeviceInput('DEV-CLEAN-01');
                   }}
-                  className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono"
+                  className="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 text-xs font-semibold transition-colors"
                 >
                   Load Clean
                 </button>
@@ -179,7 +187,7 @@ export const Transactions: React.FC = () => {
                     setAmountInput('480000');
                     setDeviceInput('DEV-PHANTOM-103');
                   }}
-                  className="px-3 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 hover:bg-rose-900/40 text-rose-300 text-xs font-mono"
+                  className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300 dark:border dark:border-rose-900/60 text-xs font-bold transition-colors"
                 >
                   Load Ring
                 </button>
@@ -187,62 +195,71 @@ export const Transactions: React.FC = () => {
             </form>
 
             {/* Live Result View */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded-lg p-4 flex flex-col justify-between">
+            <div className="bg-gray-50 dark:bg-gray-900/70 border border-gray-200/80 dark:border-gray-700/80 rounded-xl p-4 flex flex-col justify-between">
               {screenResult ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-slate-400">DECISION:</span>
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">DECISION:</span>
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
+                      className={`px-3 py-1 rounded-full text-xs font-bold border ${
                         screenResult.decision === 'HOLD_FOR_REVIEW'
-                          ? 'bg-rose-500/10 text-rose-400 border-rose-500/30 animate-pulse'
+                          ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60'
                           : screenResult.decision === 'ALLOW_WITH_MONITORING'
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/60'
+                          : 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/60'
                       }`}
                     >
                       {screenResult.decision}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-slate-400">Latency:</span>
-                    <span className="text-cyan-400 font-bold">{screenResult.latency_ms} ms</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Latency:</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                      {screenResult.latency_ms} ms
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-slate-400">Simulated Risk Score:</span>
-                    <span className="text-slate-200 font-bold">{screenResult.risk_score} / 100</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">Simulated Risk Score:</span>
+                    <span className="text-gray-900 dark:text-white font-bold font-mono">
+                      {screenResult.risk_score} / 100
+                    </span>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-800">
-                    <span className="text-[11px] font-mono text-slate-400 uppercase">Triggered Rules:</span>
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase">
+                      Triggered Rules:
+                    </span>
                     {screenResult.rules.length > 0 ? (
                       <div className="mt-1 space-y-1">
                         {screenResult.rules.map((r: any) => (
-                          <div key={r.rule_id} className="text-xs text-rose-300 font-mono flex items-center gap-1.5">
+                          <div
+                            key={r.rule_id}
+                            className="text-xs text-rose-600 dark:text-rose-400 font-mono flex items-center gap-1.5"
+                          >
                             <AlertOctagon className="w-3.5 h-3.5" />
                             {r.rule_id}: {r.reason} (+{r.score} pts)
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-emerald-400 font-mono mt-1 flex items-center gap-1">
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Cleared real-time graph checks
                       </p>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center text-xs font-mono text-slate-500">
+                <div className="h-full flex items-center justify-center text-xs text-gray-400">
                   Ready to screen payment. Fill form and click Screen.
                 </div>
               )}
 
               {screenResult?.decision === 'HOLD_FOR_REVIEW' && (
-                <div className="mt-3 pt-3 border-t border-slate-800 flex gap-2">
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
                   <Link
                     to="/investigations/INV-2026-PHANTOM-001"
-                    className="flex-1 py-1.5 text-center rounded bg-rose-600 hover:bg-rose-500 text-slate-950 font-bold text-xs font-mono"
+                    className="flex-1 py-2 text-center rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors shadow-xs"
                   >
                     Open Investigation Ticket
                   </Link>
@@ -254,17 +271,17 @@ export const Transactions: React.FC = () => {
       </div>
 
       {/* Main Ledger Table */}
-      <div className="bg-phantom-surface border border-phantom-border rounded-xl p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-phantom-border">
+      <div className="bg-white dark:bg-[#1C2434] border border-gray-200/80 dark:border-gray-800 rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex-1 min-w-[280px] max-w-md">
             <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search tx ref or hash..." />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-slate-400">Type:</span>
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Type:</span>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="bg-slate-900 border border-phantom-border rounded-lg px-3 py-1.5 text-xs text-slate-200 font-mono"
+              className="bg-gray-50 dark:bg-gray-900 border border-gray-200/80 dark:border-gray-700 rounded-xl px-3 py-1.5 text-xs text-gray-800 dark:text-gray-200 font-semibold focus:outline-none"
             >
               <option value="ALL">ALL TYPES</option>
               <option value="RTGS">RTGS</option>
@@ -277,40 +294,44 @@ export const Transactions: React.FC = () => {
 
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-slate-900/60 text-slate-400 border-b border-phantom-border">
+            <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 font-sans">
               <tr>
-                <th className="py-3 px-4">TX REFERENCE</th>
-                <th className="py-3 px-4">SENDER</th>
-                <th className="py-3 px-4">RECEIVER</th>
-                <th className="py-3 px-4">AMOUNT</th>
-                <th className="py-3 px-4">TYPE</th>
-                <th className="py-3 px-4">STATUS</th>
-                <th className="py-3 px-4">BLOCKCHAIN HASH</th>
+                <th className="py-3 px-4 font-bold">TX REFERENCE</th>
+                <th className="py-3 px-4 font-bold">SENDER</th>
+                <th className="py-3 px-4 font-bold">RECEIVER</th>
+                <th className="py-3 px-4 font-bold">AMOUNT</th>
+                <th className="py-3 px-4 font-bold">TYPE</th>
+                <th className="py-3 px-4 font-bold">STATUS</th>
+                <th className="py-3 px-4 font-bold">BLOCKCHAIN HASH</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
               {pageItems.map((tx) => (
-                <tr key={tx.id} className="hover:bg-slate-900/40 transition-colors">
-                  <td className="py-3 px-4 font-bold text-cyan-400">{tx.transaction_reference}</td>
-                  <td className="py-3 px-4 text-slate-300">{formatHash(tx.sender_account_id, 4)}</td>
-                  <td className="py-3 px-4 text-slate-300">{formatHash(tx.receiver_account_id, 4)}</td>
-                  <td className="py-3 px-4 font-bold text-slate-100">
+                <tr key={tx.id} className="hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition-colors">
+                  <td className="py-3 px-4 font-bold text-[#5750F1]">{tx.transaction_reference}</td>
+                  <td className="py-3 px-4 text-gray-600 dark:text-gray-300">{formatHash(tx.sender_account_id, 4)}</td>
+                  <td className="py-3 px-4 text-gray-600 dark:text-gray-300">{formatHash(tx.receiver_account_id, 4)}</td>
+                  <td className="py-3 px-4 font-bold text-gray-900 dark:text-white">
                     Rs.{Number(tx.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
-                  <td className="py-3 px-4 text-slate-400">{tx.transaction_type}</td>
+                  <td className="py-3 px-4">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                      {tx.transaction_type}
+                    </span>
+                  </td>
                   <td className="py-3 px-4">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         tx.status === 'FLAGGED'
-                          ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400'
+                          : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400'
                       }`}
                     >
                       {tx.status || 'COMPLETED'}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-400 flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                  <td className="py-3 px-4 text-gray-500 flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5 text-[#5750F1]" />
                     <span>{formatHash(tx.blockchain_hash || '', 6)}</span>
                   </td>
                 </tr>
@@ -320,7 +341,7 @@ export const Transactions: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        <div className="mt-4 pt-4 border-t border-phantom-border flex items-center justify-between text-xs font-mono text-slate-400">
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500">
           <span>
             Page {page} of {totalPages || 1} ({filtered.length} transactions)
           </span>
@@ -328,14 +349,14 @@ export const Transactions: React.FC = () => {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 rounded bg-slate-900 border border-phantom-border hover:bg-slate-800 disabled:opacity-50"
+              className="px-3.5 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 font-semibold disabled:opacity-50 transition-colors"
             >
               PREV
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1 rounded bg-slate-900 border border-phantom-border hover:bg-slate-800 disabled:opacity-50"
+              className="px-3.5 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 font-semibold disabled:opacity-50 transition-colors"
             >
               NEXT
             </button>
@@ -345,4 +366,3 @@ export const Transactions: React.FC = () => {
     </div>
   );
 };
-

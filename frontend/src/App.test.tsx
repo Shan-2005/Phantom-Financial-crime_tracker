@@ -23,4 +23,11 @@ describe('PHANTOM Frontend Suite', () => {
     const html = renderToString(<App />);
     expect(html).toContain('Pre-Transaction Real-Time AML Screener');
   });
+
+  it('renders identities route with cluster matrix', () => {
+    window.history.pushState({}, 'Test', '/identities');
+    const html = renderToString(<App />);
+    expect(html).toContain('Shared Identity');
+    expect(html).toContain('DEV-PHANTOM-103');
+  });
 });
