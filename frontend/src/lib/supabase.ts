@@ -1,17 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
 const meta = import.meta as any;
+const env = (meta && meta.env) || {};
+
 const supabaseUrl =
-  (meta.env && meta.env.VITE_SUPABASE_URL) || 'https://gkczjrtcpqhjmowwfdmm.supabase.co';
+  env.VITE_SUPABASE_URL ||
+  env.NEXT_PUBLIC_SUPABASE_URL ||
+  'https://gkczjrtcpqhjmowwfdmm.supabase.co';
+
 const supabaseAnonKey =
-  (meta.env && (meta.env.VITE_SUPABASE_ANON_KEY || meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy';
+  env.VITE_SUPABASE_ANON_KEY ||
+  env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  'sb_publishable_vylQfO_qbnZ4xKQ5_KoGpg_J61tk72S';
 
 export const isCloudMode = Boolean(
-  meta.env &&
-    meta.env.VITE_SUPABASE_URL &&
-    !meta.env.VITE_SUPABASE_URL.includes('your-project') &&
-    !meta.env.VITE_SUPABASE_URL.includes('localhost')
+  supabaseUrl &&
+    !supabaseUrl.includes('your-project') &&
+    !supabaseUrl.includes('localhost')
 );
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
